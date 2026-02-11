@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="text-center w-100 py-4" style="background-color: black;">
+  <h3 class="text-white font-weight-bold m-0" style="text-shadow: 2px 2px 5px gray;">
+    FoodiePoint Hub
+  </h3>
+</div>
+<div class="row mb-4">
+  <!-- Stats Cards -->
+  <div class="col-md-4 mb-3">
+    <div class="card stat-card shadow">
+      <div class="card-body d-flex align-items-center">
+        <div class="stat-icon bg-primary text-white mr-3">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Total Items</div>
+          <div class="h4 mb-0 font-weight-bold">{{ total_items }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="card stat-card shadow">
+      <div class="card-body d-flex align-items-center">
+        <div class="stat-icon bg-success text-white mr-3">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Available Stock</div>
+          <div class="h4 mb-0 font-weight-bold">{{ available_total }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="card stat-card shadow">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Latest Item</div>
+          <div class="h5 mb-0 font-weight-bold">{{ latest_item or "None" }}</div>
+        </div>
+        <a class="btn btn-outline-primary btn-sm rounded-pill" href="{{ url_for('my_orders') }}">
+          <i class="fas fa-list"></i> My Orders
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item (Admin Only) -->
+{% if user.role == 'admin' %}
+<div class="card shadow mb-4">
+  <div class="card-header bg-primary text-white rounded-top">
+    <h5 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Item</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="action" value="add">
+      <div class="form-row">
+        <div class="col-md-3 mb-3">
+          <input class="form-control rounded-pill" name="name" placeholder="Name" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <input class="form-control rounded-pill" type="number" step="0.01" name="price" placeholder="Price" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <input class="form-control rounded-pill" name="category" placeholder="Category" required>
+        </div>
+        <div class="col-md-3 mb-3">
+          <input class="form-control rounded-pill" type="number" name="stock" min="1" value="1" placeholder="Stock" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block rounded-pill">
+        <i class="fas fa-save"></i> Add Item
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Search -->
+<div class="card shadow mb-4">
+  <div class="card-header bg-light rounded-top">
+    <h5 class="mb-0"><i class="fas fa-search"></i> Search Items</h5>
+  </div>
+  <div class="card-body">
+    <form method="GET" class="form-row">
+      <div class="col-md-5 mb-3">
+        <input class="form-control rounded-pill" name="search_name" placeholder="Search by Name" value="{{ request.args.get('search_name','') }}">
+      </div>
+      <div class="col-md-5 mb-3">
+        <input class="form-control rounded-pill" name="search_category" placeholder="Search by Category" value="{{ request.args.get('search_category','') }}">
+      </div>
+      <div class="col-md-2 mb-3">
+        <button type="submit" class="btn btn-info btn-block rounded-pill">
+          <i class="fas fa-search"></i> Search
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Items Table -->
+<div class="card shadow">
+  <div class="card-header bg-dark text-white rounded-top d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-table"></i> Menu Items</h5>
+    <div>{{ pagination.links|safe }}</div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Available</th>
+            <th>Action</th>
+            {% if user.role == 'admin' %}
+            <th>Update</th>
+            <th>Delete</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in items %}
+          {% set avail = (i.get('available_quantity', 0) or 0) %}
+          <tr>
+            <td class="font-weight-bold">{{ i.get('name','') }}</td>
+            <td>${{ "%.2f"|format((i.get('price', 0) or 0)|float) }}</td>
+            <td><span class="badge badge-primary rounded-pill">{{ i.get('category','') }}</span></td>
+            <td>
+              <span class="badge {{ 'badge-success' if avail|int > 0 else 'badge-danger' }} rounded-pill">
+                {{ avail }}
+              </span>
+            </td>
+            <td>
+              {% if avail|int > 0 %}
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="action" value="order">
+                <input type="hidden" name="item_id" value="{{ i._id }}">
+                <input type="number" name="quantity" class="form-control form-control-sm d-inline w-50 mr-1" min="1" max="{{ avail }}" value="1" required>
+                <button type="submit" class="btn btn-sm btn-success rounded-pill">
+                  <i class="fas fa-shopping-cart"></i> Order
+                </button>
+              </form>
+              {% else %}
+              <button class="btn btn-sm btn-secondary rounded-pill" disabled>
+                <i class="fas fa-times"></i> Out of Stock
+              </button>
+              {% endif %}
+            </td>
+            {% if user.role == 'admin' %}
+            <td>
+              <form action="{{ url_for('update_item', item_id=i._id) }}" method="POST" class="form-inline">
+                <input class="form-control form-control-sm mr-1 mb-1 rounded-pill" name="new_name" placeholder="Name">
+                <input class="form-control form-control-sm mr-1 mb-1 rounded-pill" type="number" step="0.01" name="new_price" placeholder="Price">
+                <input class="form-control form-control-sm mr-1 mb-1 rounded-pill" name="new_category" placeholder="Category">
+                <button type="submit" class="btn btn-sm btn-warning rounded-pill mb-1">
+                  <i class="fas fa-edit"></i> Update
+                </button>
+              </form>
+            </td>
+            <td>
+              <a class="btn btn-sm btn-danger rounded-pill" href="{{ url_for('delete_item', item_id=i._id) }}"
+                 onclick="return confirm('Delete this item?')">
+                <i class="fas fa-trash"></i> Delete
+              </a>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Only Cash Payment Notice -->
+<div class="text-center mt-3">
+  <span class="badge badge-danger p-2" style="font-size: 1rem;">
+    Important Notice:Only Cash Payment Allowed.
+  </span>
+</div>
+
+<!-- Thank You Message -->
+<div class="text-center mt-2">
+  <span class="badge badge-info p-2" style="font-size: 1rem;">
+    Thank You for Visiting our FoodiePoint Hub!
+  </span>
+</div>
+{% endblock %}
