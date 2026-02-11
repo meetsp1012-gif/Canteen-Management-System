@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Canteen{% endblock %}</title>
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark topbar">
+  <a class="navbar-brand font-weight-bold" href="{{ url_for('index') }}">
+    <i class="fas fa-utensils mr-2"></i>Canteen Portal
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#nav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="nav">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item {% if request.endpoint=='index' %}active{% endif %}">
+        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+      </li>
+      <li class="nav-item {% if request.endpoint=='items' %}active{% endif %}">
+        <a class="nav-link" href="{{ url_for('items') }}">Menu</a>
+      </li>
+      <li class="nav-item {% if request.endpoint=='my_orders' %}active{% endif %}">
+        <a class="nav-link" href="{{ url_for('my_orders') }}">My Orders</a>
+      </li>
+    </ul>
+
+    {% if user %}
+      <span class="navbar-text mr-3">
+        {{ user.username }} ({{ user.role }})
+      </span>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">Logout</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="container my-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category=='success' else 'danger' if category=='error' else 'info' }} alert-dismissible fade show">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
